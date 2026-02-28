@@ -1,0 +1,38 @@
+services:
+  via-user-service:
+    image: "${USER_SERVICE_IMAGE:-ghcr.io/your-org/via-user-service:latest}"
+    container_name: via-user-service
+    restart: unless-stopped
+    environment:
+      SERVICE_PORT: "${USER_SERVICE_PORT:-8081}"
+      NATS_URL: "${VIA_NATS_URL:-nats://via-nats:4222}"
+    expose:
+      - "8081"
+    networks:
+      - via-net
+
+  via-fleet-service:
+    image: "${FLEET_SERVICE_IMAGE:-ghcr.io/your-org/via-fleet-service:latest}"
+    container_name: via-fleet-service
+    restart: unless-stopped
+    environment:
+      SERVICE_PORT: "${FLEET_SERVICE_PORT:-8082}"
+      NATS_URL: "${VIA_NATS_URL:-nats://via-nats:4222}"
+    expose:
+      - "8082"
+    networks:
+      - via-net
+
+  via-notification-worker:
+    image: "${NOTIFICATION_WORKER_IMAGE:-ghcr.io/your-org/via-notification-worker:latest}"
+    container_name: via-notification-worker
+    restart: unless-stopped
+    environment:
+      NATS_URL: "${VIA_NATS_URL:-nats://via-nats:4222}"
+      LOG_LEVEL: "${NOTIFICATION_LOG_LEVEL:-info}"
+    networks:
+      - via-net
+
+networks:
+  via-net:
+    external: true

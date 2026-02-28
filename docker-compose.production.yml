@@ -1,0 +1,37 @@
+services:
+  nats:
+    image: nats:2.10
+    container_name: via-nats
+    command: ["-js", "-m", "8222"]
+    restart: unless-stopped
+    ports:
+      - "${VIA_NATS_CLIENT_PORT:-4222}:4222"
+      - "${VIA_NATS_MONITOR_PORT:-8222}:8222"
+    volumes:
+      - via-nats-data:/data
+    networks:
+      - via-net
+
+  realtime-gateway:
+    build:
+      context: ..
+      dockerfile: deployment/docker/gateway.Dockerfile
+    image: "${VIA_IMAGE_REGISTRY:-local}/via-realtime-gateway:${VIA_IMAGE_TAG:-latest}"
+    container_name: via-realtime-gateway
+    depends_on:
+      - nats
+    restart: unless-stopped
+    environment:
+      LISTEN_ADDR: "${VIA_LISTEN_ADDR:-:9090}"
+      NATS_URL: "${VIA_NATS_URL:-nats://via-nats:4222}"
+    ports:
+      - "${VIA_GATEWAY_PORT:-9090}:9090"
+    networks:
+      - via-net
+
+volumes:
+  via-nats-data:
+
+networks:
+  via-net:
+    name: via-net

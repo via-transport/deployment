@@ -1,6 +1,7 @@
 # Local environment files
 env/*.env
 !env/*.example
+dev/tile-proxy/cache/
 
 # macOS
 .DS_Store

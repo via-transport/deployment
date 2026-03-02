@@ -10,10 +10,12 @@ It is intentionally separate from the app repos so you can keep ops assets in on
 - `docker-compose.services.example.yml`: example service containers for future backend microservices
 - `nats/docker-compose.yml`: NATS-only stack for local or standalone broker deployment
 - `docker/gateway.Dockerfile`: production container image for the Go realtime gateway
+- `dev/tile-proxy/`: tracked local tile proxy for Android emulator map delivery
 - `env/production.env.example`: environment template for production deployments
 - `scripts/build-images.sh`: builds the gateway image from the workspace
 - `scripts/deploy.sh`: deploys the production stack with Docker Compose
 - `scripts/logs.sh`: tails service logs from the production stack
+- `scripts/run-tile-proxy.sh`: starts the local map tile proxy used by Android emulators
 
 ## Current Production Stack
 
@@ -49,6 +51,25 @@ cp deployment/env/production.env.example deployment/env/production.env
 ```bash
 ./deployment/scripts/logs.sh
 ```
+
+## Local Dev Utilities
+
+When Android emulators cannot resolve map tile hosts reliably, run the tracked tile
+proxy and point the Flutter apps at `10.0.2.2`.
+
+1. Start the proxy:
+
+```bash
+./deployment/scripts/run-tile-proxy.sh
+```
+
+2. Run the Flutter apps with:
+
+```bash
+--dart-define='VIA_TILE_PROXY_URL=http://10.0.2.2:8311/osm/{z}/{x}/{y}.png'
+```
+
+The proxy caches tiles locally under `deployment/dev/tile-proxy/cache/`.
 
 ## Notes
 

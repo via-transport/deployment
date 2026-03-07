@@ -21,10 +21,11 @@ It is intentionally separate from the app repos so you can keep ops assets in on
 
 The production stack in this folder deploys:
 
-- `via-nats`: NATS with JetStream enabled
+- `via-nats`: NATS with JetStream enabled for realtime fanout and replay
+- `via-postgres`: PostgreSQL 16 for durable application data
 - `via-realtime-gateway`: the Go gateway from `via-backend`
 
-The Flutter apps do not connect to NATS directly. They connect to the Go gateway over HTTP/WebSocket, and the gateway relays messages through NATS.
+The Flutter apps do not connect to NATS directly. They connect to the Go gateway over HTTP/WebSocket. The gateway uses PostgreSQL for durable entity storage and NATS for realtime messaging and event fanout.
 
 ## Quick Start
 
@@ -52,6 +53,13 @@ cp deployment/env/production.env.example deployment/env/production.env
 ./deployment/scripts/logs.sh
 ```
 
+5. If you are moving from the older NATS KV store backend, import the existing
+data into PostgreSQL once:
+
+```bash
+./deployment/scripts/migrate-kv-to-postgres.sh
+```
+
 ## Local Dev Utilities
 
 When Android emulators cannot resolve map tile hosts reliably, run the tracked tile
@@ -76,3 +84,5 @@ The proxy caches tiles locally under `deployment/dev/tile-proxy/cache/`.
 - `docker-compose.services.example.yml` is intentionally an example file. Replace placeholder image names with your real service images when those services exist.
 - If you later split backend services (user, fleet, notifications, billing), extend the example compose file instead of mixing those definitions into the app repos.
 - For production, put this folder behind a reverse proxy (Caddy, Nginx, Traefik) and terminate TLS there.
+- `STORE_BACKEND=postgres` is the intended production default. Switching from the older `nats` store backend does not migrate existing KV data automatically.
+- Use `migrate-kv-to-postgres.sh` once after the switch if you need to retain data from the old KV buckets.

@@ -12,6 +12,29 @@ services:
     networks:
       - via-net
 
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${PG_DATABASE:-via}"
+      POSTGRES_USER: "${PG_USER:-via}"
+      POSTGRES_PASSWORD: "${PG_PASSWORD:-via-dev-password}"
+      TZ: "${TZ:-UTC}"
+    volumes:
+      - via-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${PG_USER:-via} -d ${PG_DATABASE:-via}"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - via-net
+
   realtime-gateway:
     build:
       context: ..
@@ -19,11 +42,25 @@ services:
     image: "${VIA_IMAGE_REGISTRY:-local}/via-realtime-gateway:${VIA_IMAGE_TAG:-latest}"
     container_name: via-realtime-gateway
     depends_on:
-      - nats
+      nats:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     environment:
       LISTEN_ADDR: "${VIA_LISTEN_ADDR:-:9090}"
       NATS_URL: "${VIA_NATS_URL:-nats://via-nats:4222}"
+      STORE_BACKEND: "${STORE_BACKEND:-postgres}"
+      PG_HOST: "${PG_HOST:-postgres}"
+      PG_PORT: "${PG_PORT:-5432}"
+      PG_USER: "${PG_USER:-via}"
+      PG_PASSWORD: "${PG_PASSWORD:-via-dev-password}"
+      PG_DATABASE: "${PG_DATABASE:-via}"
+      PG_SSLMODE: "${PG_SSLMODE:-disable}"
+      PG_MAX_CONNS: "${PG_MAX_CONNS:-20}"
+      PG_MIN_CONNS: "${PG_MIN_CONNS:-2}"
+      PG_MAX_CONN_LIFETIME: "${PG_MAX_CONN_LIFETIME:-30m}"
+      PG_MAX_CONN_IDLE_TIME: "${PG_MAX_CONN_IDLE_TIME:-5m}"
     ports:
       - "${VIA_GATEWAY_PORT:-9090}:9090"
     networks:
@@ -31,6 +68,7 @@ services:
 
 volumes:
   via-nats-data:
+  via-pg-data:
 
 networks:
   via-net:
